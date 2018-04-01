@@ -215,6 +215,7 @@ contract EDEX is StandardToken{
         verified[secondaryWallet] = true;
         // priceTopIntegerInput = 800,000 for 1 ETH = 800 EDEX at 1 ETH = $400
         currentPrice = PriceEDEX(priceTopIntegerInput, 1000);
+        // icoStartBlock should be around block number 5,528,800 = May 1st 2018
         icoStartBlock = startBlockInput;
         // icoEndBlock = icoStartBlock + 345,600 blocks
         icoEndBlock = endBlockInput;
