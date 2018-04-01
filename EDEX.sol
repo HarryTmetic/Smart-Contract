@@ -143,16 +143,16 @@ contract EDEX is StandardToken{
     event Verification(address indexed investor);
     event Buy(address indexed investor, address indexed beneficiary, uint256 ethValue, uint256 amountTokens);
     event AllocatePresale(address indexed investor, uint256 amountTokens);
-    event PriceEDEXUpdate(uint256 bunshi, uint256 bunbo);
+    event PriceEDEXUpdate(uint256 topInteger, uint256 bottomInteger);
     event AddLiquidity(uint256 etherAmount);
     event RemoveLiquidity(uint256 etherAmount);
     event OroshiYokyu(address indexed investor, uint256 amountTokens);
     event Oroshi(address indexed investor, uint256 amountTokens, uint256 etherAmount);
 
-    // for price updates
+    // for price updates as a rational number
     struct PriceEDEX{
-        uint256 bunshi;
-        uint256 bunbo;
+        uint256 topInteger;
+        uint256 bottomInteger;
     }
 
     struct Liquidation{
@@ -188,20 +188,20 @@ contract EDEX is StandardToken{
         require(safeSub(now, priceUpdateWaitingTime) >= previousUpdateTime);
         _;
     }
-    modifier only_if_increase (uint256 newBunshi){
-        if (newBunshi > currentPrice.bunshi) _;
+    modifier only_if_increase (uint256 newTopInteger){
+        if (newTopInteger > currentPrice.topInteger) _;
     }
 
-    function EDEX(address secondaryWalletInput, uint256 priceBunshiInput, uint256 startBlockInput, uint256 endBlockInput){
+    function EDEX(address secondaryWalletInput, uint256 priceTopIntegerInput, uint256 startBlockInput, uint256 endBlockInput){
         require(secondaryWalletInput != address(0));
         require(endBlockInput > startBlockInput);
-        require(priceBunshiInput > 0);
+        require(priceTopIntegerInput > 0);
         mainWallet = msg.sender;
         secondaryWallet = secondaryWalletInput;
         verified[mainWallet] = true;
         verified[secondaryWallet] = true;
-        // priceBunshiInput = 4,000,000 for 1 ETH = 2,000 EDEX
-        currentPrice = PriceEDEX(priceBunshiInput, 2000);
+        // priceTopIntegerInput = 4,000,000 for 1 ETH = 2,000 EDEX
+        currentPrice = PriceEDEX(priceTopIntegerInput, 2000);
         icoStartBlock = startBlockInput;
         // icoEndBlock = icoStartBlock + 345,600 blocks
         icoEndBlock = endBlockInput;
@@ -215,33 +215,33 @@ contract EDEX is StandardToken{
         grantVestedEDEXSet = true;
     }
 
-    function updatePriceEDEX(uint256 newBunshi) external onlyControllingWallets{
-        require(newBunshi > 0);
-        require_limited_change(newBunshi);
+    function updatePriceEDEX(uint256 newTopInteger) external onlyControllingWallets{
+        require(newTopInteger > 0);
+        require_limited_change(newTopInteger);
         // either secondaryWallet command is compliant or transaction came from mainWallet
-        currentPrice.bunshi = newBunshi;
+        currentPrice.topInteger = newTopInteger;
         // maps time to new PriceEDEX (if not during ICO)
         prices[previousUpdateTime] = currentPrice;
         previousUpdateTime = now;
-        PriceEDEXUpdate(newBunshi, currentPrice.bunbo);
+        PriceEDEXUpdate(newTopInteger, currentPrice.bottomInteger);
     }
 
-    function require_limited_change (uint256 newBunshi) private only_if_secondaryWallet require_waited only_if_increase(newBunshi){
+    function require_limited_change (uint256 newTopInteger) private only_if_secondaryWallet require_waited only_if_increase(newTopInteger){
         uint256 percentage_diff = 0;
-        percentage_diff = safeMul(newBunshi, 100) / currentPrice.bunshi;
+        percentage_diff = safeMul(newTopInteger, 100) / currentPrice.topInteger;
         percentage_diff = safeSub(percentage_diff, 100);
         // secondaryWallet can only increase price by max 20% and only every priceUpdateWaitingTime
         require(percentage_diff <= 20);
     }
 
-    function updatePriceBunbo(uint256 newBunbo) external onlyMainWallet{
+    function updatePriceBottomInteger(uint256 newBottomInteger) external onlyMainWallet{
         require(block.number > icoEndBlock);
-        require(newBunbo > 0);
-        currentPrice.bunbo = newBunbo;
+        require(newBottomInteger > 0);
+        currentPrice.bottomInteger = newBottomInteger;
         // maps time to new Price
         prices[previousUpdateTime] = currentPrice;
         previousUpdateTime = now;
-        PriceEDEXUpdate(currentPrice.bunshi, newBunbo);
+        PriceEDEXUpdate(currentPrice.topInteger, newBottomInteger);
     }
 
     function tokenAllocation(address investor, uint256 amountTokens) private{
@@ -278,8 +278,8 @@ contract EDEX is StandardToken{
         require(investor != address(0));
         require(msg.value >= minInvestment);
         require(block.number >= icoStartBlock && block.number < icoEndBlock);
-        uint256 icoBunbo = icoBunboPrice();
-        uint256 tokensToBuy = safeMul(msg.value, currentPrice.bunshi) / icoBunbo;
+        uint256 icoBottomInteger = icoBottomIntegerPrice();
+        uint256 tokensToBuy = safeMul(msg.value, currentPrice.topInteger) / icoBottomInteger;
         tokenAllocation(investor, tokensToBuy);
         // send ether to mainWallet
         mainWallet.transfer(msg.value);
@@ -287,21 +287,21 @@ contract EDEX is StandardToken{
     }
 
     // bonus scheme during ICO, $0.5, $0.55, $0.6
-    function icoBunboPrice() public constant returns (uint256){
+    function icoBottomIntegerPrice() public constant returns (uint256){
         uint256 icoDuration = safeSub(block.number, icoStartBlock);
-        uint256 bunbo;
+        uint256 bottomInteger;
         // icoDuration < 115,200 blocks = 20 days
         if (icoDuration < 100){
-            return currentPrice.bunbo;
+            return currentPrice.bottomInteger;
         }
         // icoDuration < 230,400 blocks = 40 days
         else if (icoDuration < 200 ){
-            bunbo = safeMul(currentPrice.bunbo, 105) / 100;
-            return bunbo;
+            bottomInteger = safeMul(currentPrice.bottomInteger, 105) / 100;
+            return bottomInteger;
         }
         else{
-            bunbo = safeMul(currentPrice.bunbo, 110) / 100;
-            return bunbo;
+            bottomInteger = safeMul(currentPrice.bottomInteger, 110) / 100;
+            return bottomInteger;
         }
     }
 
@@ -340,8 +340,8 @@ contract EDEX is StandardToken{
         uint256 requestTime = liquidations[investor].time;
         // obtain the next price that was set after the request
         PriceEDEX storage price = prices[requestTime];
-        require(price.bunshi > 0); // price must have been set
-        uint256 oroshiValue = safeMul(tokens, price.bunbo) / price.bunshi;
+        require(price.topInteger > 0); // price must have been set
+        uint256 oroshiValue = safeMul(tokens, price.bottomInteger) / price.topInteger;
         // if contract ethbal > then send + transfer tokens to mainWallet, otherwise give tokens back
         liquidations[investor].tokens = 0;
         if (this.balance >= oroshiValue)
@@ -366,7 +366,7 @@ contract EDEX is StandardToken{
     function checkLiquidationValue(uint256 amountTokensToLiquidate) constant returns (uint256 etherValue){
         require(amountTokensToLiquidate > 0);
         require(balanceOf(msg.sender) >= amountTokensToLiquidate);
-        uint256 oroshiValue = safeMul(amountTokensToLiquidate, currentPrice.bunbo) / currentPrice.bunshi;
+        uint256 oroshiValue = safeMul(amountTokensToLiquidate, currentPrice.bottomInteger) / currentPrice.topInteger;
         require(this.balance >= oroshiValue);
         return oroshiValue;
     }
@@ -427,5 +427,4 @@ contract EDEX is StandardToken{
         require(tx.origin == msg.sender);
         buyTo(msg.sender);
     }
-
 }
