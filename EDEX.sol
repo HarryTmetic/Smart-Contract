@@ -154,14 +154,14 @@ contract EDEX is StandardToken{
     mapping (address => bool) public verified;
 
     event Verification(address indexed investor);
+    event LiquidationCall(address indexed investor, uint256 amountTokens);
+    event Liquidations(address indexed investor, uint256 amountTokens, uint256 etherAmount);
     event Buy(address indexed investor, address indexed beneficiary, uint256 ethValue, uint256 amountTokens);
     event AllocatePresale(address indexed investor, uint256 amountTokens);
     event PriceEDEXUpdate(uint256 topInteger, uint256 bottomInteger);
     event AddLiquidity(uint256 etherAmount);
     event RemoveLiquidity(uint256 etherAmount);
-    event LiquidationCall(address indexed investor, uint256 amountTokens);
-    event Liquidations(address indexed investor, uint256 amountTokens, uint256 etherAmount);
-
+    
     // for price updates as a rational number
     struct PriceEDEX{
         uint256 topInteger;
