@@ -213,8 +213,8 @@ contract EDEX is StandardToken{
         secondaryWallet = secondaryWalletInput;
         verified[mainWallet] = true;
         verified[secondaryWallet] = true;
-        // priceTopIntegerInput = 4,000,000 for 1 ETH = 2,000 EDEX
-        currentPrice = PriceEDEX(priceTopIntegerInput, 2000);
+        // priceTopIntegerInput = 800,000 for 1 ETH = 800 EDEX at 1 ETH = $400
+        currentPrice = PriceEDEX(priceTopIntegerInput, 1000);
         icoStartBlock = startBlockInput;
         // icoEndBlock = icoStartBlock + 345,600 blocks
         icoEndBlock = endBlockInput;
