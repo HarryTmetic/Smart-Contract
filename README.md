@@ -1,1 +1,1 @@
-Smart-Contract for Crowdsale and Vesting
+Smart Contracts for Crowdsale and Vesting
