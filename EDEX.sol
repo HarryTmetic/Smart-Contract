@@ -313,11 +313,11 @@ contract EDEX is StandardToken{
         }
         // icoDuration < 230,400 blocks = 40 days
         else if (icoDuration < 200 ){
-            bottomInteger = safeMul(currentPrice.bottomInteger, 105) / 100;
+            bottomInteger = safeMul(currentPrice.bottomInteger, 110) / 100;
             return bottomInteger;
         }
         else{
-            bottomInteger = safeMul(currentPrice.bottomInteger, 110) / 100;
+            bottomInteger = safeMul(currentPrice.bottomInteger, 120) / 100;
             return bottomInteger;
         }
     }
