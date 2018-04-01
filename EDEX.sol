@@ -159,8 +159,8 @@ contract EDEX is StandardToken{
     event PriceEDEXUpdate(uint256 topInteger, uint256 bottomInteger);
     event AddLiquidity(uint256 etherAmount);
     event RemoveLiquidity(uint256 etherAmount);
-    event OroshiYokyu(address indexed investor, uint256 amountTokens);
-    event Oroshi(address indexed investor, uint256 amountTokens, uint256 etherAmount);
+    event LiquidationCall(address indexed investor, uint256 amountTokens);
+    event Liquidations(address indexed investor, uint256 amountTokens, uint256 etherAmount);
 
     // for price updates as a rational number
     struct PriceEDEX{
@@ -260,12 +260,12 @@ contract EDEX is StandardToken{
     function tokenAllocation(address investor, uint256 amountTokens) private{
         require(grantVestedEDEXSet);
         // the 15% allocated to the team
-        uint256 developmentAllocation = safeMul(amountTokens, 1764705882352941) / 10000000000000000;
-        uint256 newTokens = safeAdd(amountTokens, developmentAllocation);
+        uint256 teamAllocation = safeMul(amountTokens, 1764705882352941) / 10000000000000000;
+        uint256 newTokens = safeAdd(amountTokens, teamAllocation);
         require(safeAdd(totalSupply, newTokens) <= maxSupply);
         totalSupply = safeAdd(totalSupply, newTokens);
         balances[investor] = safeAdd(balances[investor], amountTokens);
-        balances[grantVestedEDEXContract] = safeAdd(balances[grantVestedEDEXContract], developmentAllocation);
+        balances[grantVestedEDEXContract] = safeAdd(balances[grantVestedEDEXContract], teamAllocation);
     }
 
     function allocatePresaleTokens(address investor, uint amountTokens) external onlyMainWallet{
@@ -304,7 +304,7 @@ contract EDEX is StandardToken{
         Buy(msg.sender, investor, msg.value, tokensToBuy);
     }
 
-    // bonus scheme during ICO, $0.5, $0.55, $0.6
+    // bonus scheme during ICO, $0.5 for 1st 20 days, $0.55 for 2nd 20 days, $0.6 for 3rd 20 days
     function icoBottomIntegerPrice() public constant returns (uint256){
         uint256 icoDuration = safeSub(block.number, icoStartBlock);
         uint256 bottomInteger;
@@ -348,10 +348,10 @@ contract EDEX is StandardToken{
         require(liquidations[investor].tokens == 0);
         balances[investor] = safeSub(balances[investor], amountTokensToLiquidate);
         liquidations[investor] = Liquidation({tokens: amountTokensToLiquidate, time: previousUpdateTime});
-        OroshiYokyu(investor, amountTokensToLiquidate);
+        LiquidationCall(investor, amountTokensToLiquidate);
     }
 
-    function oroshi() external{
+    function liquidate() external{
         address investor = msg.sender;
         uint256 tokens = liquidations[investor].tokens;
         require(tokens > 0);
@@ -359,34 +359,34 @@ contract EDEX is StandardToken{
         // obtain the next price that was set after the request
         PriceEDEX storage price = prices[requestTime];
         require(price.topInteger > 0); // price must have been set
-        uint256 oroshiValue = safeMul(tokens, price.bottomInteger) / price.topInteger;
+        uint256 liquidationValue = safeMul(tokens, price.bottomInteger) / price.topInteger;
         // if contract ethbal > then send + transfer tokens to mainWallet, otherwise give tokens back
         liquidations[investor].tokens = 0;
-        if (this.balance >= oroshiValue)
-            enact_liquidation_greater_equal(investor, oroshiValue, tokens);
+        if (this.balance >= liquidationValue)
+            enact_liquidation_greater_equal(investor, liquidationValue, tokens);
         else
-            enact_liquidation_less(investor, oroshiValue, tokens);
+            enact_liquidation_less(investor, liquidationValue, tokens);
     }
 
-    function enact_liquidation_greater_equal(address investor, uint256 oroshiValue, uint256 tokens) private{
-        assert(this.balance >= oroshiValue);
+    function enact_liquidation_greater_equal(address investor, uint256 liquidationValue, uint256 tokens) private{
+        assert(this.balance >= liquidationValue);
         balances[mainWallet] = safeAdd(balances[mainWallet], tokens);
-        investor.transfer(oroshiValue);
-        Oroshi(investor, tokens, oroshiValue);
+        investor.transfer(liquidationValue);
+        Liquidations(investor, tokens, liquidationValue);
     }
     
-    function enact_liquidation_less(address investor, uint256 oroshiValue, uint256 tokens) private{
-        assert(this.balance < oroshiValue);
+    function enact_liquidation_less(address investor, uint256 liquidationValue, uint256 tokens) private{
+        assert(this.balance < liquidationValue);
         balances[investor] = safeAdd(balances[investor], tokens);
-        Oroshi(investor, tokens, 0); // indicate a failed withdrawal
+        Liquidations(investor, tokens, 0); // indicate a failed withdrawal
     }
 
     function checkLiquidationValue(uint256 amountTokensToLiquidate) constant returns (uint256 etherValue){
         require(amountTokensToLiquidate > 0);
         require(balanceOf(msg.sender) >= amountTokensToLiquidate);
-        uint256 oroshiValue = safeMul(amountTokensToLiquidate, currentPrice.bottomInteger) / currentPrice.topInteger;
-        require(this.balance >= oroshiValue);
-        return oroshiValue;
+        uint256 liquidationValue = safeMul(amountTokensToLiquidate, currentPrice.bottomInteger) / currentPrice.topInteger;
+        require(this.balance >= liquidationValue);
+        return liquidationValue;
     }
 
     // add liquidity to contract for investor liquidation
