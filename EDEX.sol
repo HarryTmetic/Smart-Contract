@@ -417,7 +417,7 @@ contract EDEX is StandardToken{
         setTrading = true;
     }
 
-    function claimTokens(address _token) external onlyMainWallet{
+    function claimEDEX(address _token) external onlyMainWallet{
         require(_token != address(0));
         Token token = Token(_token);
         uint256 balance = token.balanceOf(this);
