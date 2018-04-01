@@ -268,6 +268,11 @@ contract EDEX is StandardToken{
         verified[investor] = true;
         Verification(investor);
     }
+    
+    function removeVerifiedInvestor(address investor) external onlyControllingWallets{
+        verified[investor] = false;
+        Verification(investor);
+    }
 
     function buy() external payable{
         buyTo(msg.sender);
