@@ -231,9 +231,8 @@ contract EDEX is StandardToken{
     function updatePriceEDEX(uint256 newTopInteger) external onlyControllingWallets{
         require(newTopInteger > 0);
         require_limited_change(newTopInteger);
-        // either secondaryWallet command is compliant or transaction came from mainWallet
         currentPrice.topInteger = newTopInteger;
-        // maps time to new PriceEDEX (if not during ICO)
+        // maps time to new PriceEDEX
         prices[previousUpdateTime] = currentPrice;
         previousUpdateTime = now;
         PriceEDEXUpdate(newTopInteger, currentPrice.bottomInteger);
@@ -243,7 +242,7 @@ contract EDEX is StandardToken{
         uint256 percentage_diff = 0;
         percentage_diff = safeMul(newTopInteger, 100) / currentPrice.topInteger;
         percentage_diff = safeSub(percentage_diff, 100);
-        // secondaryWallet can only increase price by max 20% and only every priceUpdateWaitingTime
+        // secondaryWallet can increase price by 20% maximum once every priceUpdateWaitingTime
         require(percentage_diff <= 20);
     }
 
@@ -358,9 +357,9 @@ contract EDEX is StandardToken{
         uint256 requestTime = liquidations[investor].time;
         // obtain the next price that was set after the request
         PriceEDEX storage price = prices[requestTime];
-        require(price.topInteger > 0); // price must have been set
+        require(price.topInteger > 0);
         uint256 liquidationValue = safeMul(tokens, price.bottomInteger) / price.topInteger;
-        // if contract ethbal > then send + transfer tokens to mainWallet, otherwise give tokens back
+        // if there is ebough ether on the contract, proceed. Otherwise, send back tokens
         liquidations[investor].tokens = 0;
         if (this.balance >= liquidationValue)
             enact_liquidation_greater_equal(investor, liquidationValue, tokens);
@@ -378,7 +377,7 @@ contract EDEX is StandardToken{
     function enact_liquidation_less(address investor, uint256 liquidationValue, uint256 tokens) private{
         assert(this.balance < liquidationValue);
         balances[investor] = safeAdd(balances[investor], tokens);
-        Liquidations(investor, tokens, 0); // indicate a failed withdrawal
+        Liquidations(investor, tokens, 0);
     }
 
     function checkLiquidationValue(uint256 amountTokensToLiquidate) constant returns (uint256 etherValue){
