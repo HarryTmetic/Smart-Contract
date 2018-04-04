@@ -304,7 +304,7 @@ contract EDEX is StandardToken{
         Buy(msg.sender, investor, msg.value, tokensToBuy);
     }
 
-    // bonus scheme during ICO, $0.5 for 1st 20 days, $0.55 for 2nd 20 days, $0.6 for 3rd 20 days
+    // bonus scheme during ICO, 1 ETH = 800 EDEX for 1st 20 days, 1 ETH = 727 EDEX for 2nd 20 days, 1 ETH = 667 EDEX for 3rd 20 days
     function icoBottomIntegerPrice() public constant returns (uint256){
         uint256 icoDuration = safeSub(block.number, icoStartBlock);
         uint256 bottomInteger;
