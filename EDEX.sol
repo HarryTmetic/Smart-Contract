@@ -117,7 +117,7 @@ contract EDEX is StandardToken{
     uint256 public decimals = 18;
     
     // reachable if max amount raised
-    uint256 public maxSupply = 100000000 * 10**18;
+    uint256 public maxSupply = 100000000e18;
     
     // ICO starting and ending blocks, can by changed as needed
     uint256 public icoStartBlock;
