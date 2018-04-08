@@ -282,7 +282,7 @@ contract EDEX is StandardToken{
         Verification(investor);
     }
     
-    // blacklists bot addresses used after whitelisted for ICO
+    // blacklists bot addresses using ICO whitelisted addresses
     function removeVerifiedInvestor(address investor) external onlyControllingWallets{
         verified[investor] = false;
         Verification(investor);
